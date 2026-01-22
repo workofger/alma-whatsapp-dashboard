@@ -1,0 +1,45 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0b141a"/>
+  
+  <!-- Gradient overlay -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00a884;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#0b141a;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grad1)"/>
+  
+  <!-- Logo Circle -->
+  <circle cx="200" cy="315" r="80" fill="#00a884"/>
+  <text x="200" y="340" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="80" font-weight="bold" fill="white">A</text>
+  
+  <!-- Title -->
+  <text x="320" y="280" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="bold" fill="white">Alma Dashboard</text>
+  
+  <!-- Subtitle -->
+  <text x="320" y="350" font-family="Inter, Arial, sans-serif" font-size="32" fill="#8696a0">WhatsApp Group Analytics</text>
+  
+  <!-- Features -->
+  <text x="320" y="420" font-family="Inter, Arial, sans-serif" font-size="24" fill="#00a884">✓ Real-time Monitoring</text>
+  <text x="600" y="420" font-family="Inter, Arial, sans-serif" font-size="24" fill="#00a884">✓ AI Summaries</text>
+  <text x="320" y="460" font-family="Inter, Arial, sans-serif" font-size="24" fill="#00a884">✓ Ghost Detection</text>
+  <text x="600" y="460" font-family="Inter, Arial, sans-serif" font-size="24" fill="#00a884">✓ PDF Reports</text>
+  
+  <!-- Bottom border accent -->
+  <rect y="610" width="1200" height="20" fill="#00a884"/>
+  
+  <!-- Stats mockup -->
+  <rect x="900" y="180" width="250" height="80" rx="8" fill="#202c33"/>
+  <text x="920" y="215" font-family="Inter, Arial, sans-serif" font-size="14" fill="#8696a0">Total Messages</text>
+  <text x="920" y="245" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="bold" fill="white">125,432</text>
+  
+  <rect x="900" y="280" width="250" height="80" rx="8" fill="#202c33"/>
+  <text x="920" y="315" font-family="Inter, Arial, sans-serif" font-size="14" fill="#8696a0">Active Groups</text>
+  <text x="920" y="345" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="bold" fill="white">24</text>
+  
+  <rect x="900" y="380" width="250" height="80" rx="8" fill="#202c33"/>
+  <text x="920" y="415" font-family="Inter, Arial, sans-serif" font-size="14" fill="#8696a0">Members</text>
+  <text x="920" y="445" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="bold" fill="white">1,847</text>
+</svg>

@@ -2,6 +2,49 @@
 
 All notable changes to the Alma WhatsApp Dashboard will be documented in this file.
 
+## [2.1.0] - 2026-01-22
+
+### Added
+
+#### Analytics Page
+- **New dedicated Analytics page** at `/analytics`
+- **Date range filters** - 7, 30, 90 days or custom range
+- **Group selector** - Filter analytics by specific group
+- **Comparison mode** - Compare two groups side-by-side with line charts
+- **Enhanced statistics**:
+  - Total messages and average per day
+  - Peak and slowest day identification
+  - Peak activity hour
+  - Average messages per user
+- **Hourly activity bar chart** - Messages distributed by hour
+- **Message type distribution** - Pie chart breakdown
+
+#### PDF Export
+- **Professional PDF reports** with jsPDF
+- **Export modal** with customizable options
+- **Report contents**:
+  - Executive summary with key stats
+  - Top 10 contributors table
+  - All monitored groups with statistics
+  - Proper pagination and footer
+- **Available from** Dashboard, Analytics, and Export pages
+
+### Changed
+
+- `/analytics` route now shows dedicated Analytics page (previously showed Dashboard)
+- Export page now includes "PDF Report" as export type option
+- Updated README with complete feature documentation
+- Added Open Graph and Twitter meta tags for link previews
+
+### Technical
+
+- Added `jspdf` and `html2canvas` dependencies
+- Created `services/pdfService.ts` for PDF generation
+- Created `components/ExportPdfModal.tsx` for export options
+- Created `pages/Analytics.tsx` with advanced filtering
+
+---
+
 ## [2.0.0] - 2026-01-22
 
 ### Added
@@ -45,17 +88,20 @@ All notable changes to the Alma WhatsApp Dashboard will be documented in this fi
 
 ### Changed
 
-- **Removed Debug Logs** - Cleaned up console.log statements for production
-- **Updated StatsCard** - Added link support, better trend display
-- **Updated MessageBubble** - Added highlight support, clickable usernames
-- **Updated Sidebar** - Added Search navigation item
-- **Improved GroupChat** - Added realtime updates, infinite scroll
+- Removed all mock data fallbacks - app shows real data only
+- Removed debug console.log statements for production
+- Updated StatsCard with link support, better trend display
+- Updated MessageBubble with highlight support, clickable usernames
+- Updated Sidebar with Search navigation item
+- Improved GroupChat with realtime updates, infinite scroll
 
 ### Fixed
 
-- **Hardcoded Trends** - Now calculated from actual historical data
-- **Message Limit** - Removed artificial 100 message cap in analytics
-- **Router Links** - All links now use proper React Router paths
+- Hardcoded trends - now calculated from actual historical data
+- Message limit - removed artificial 100 message cap in analytics
+- Router links - all links now use proper React Router paths
+
+---
 
 ## [1.0.0] - 2026-01-21
 
