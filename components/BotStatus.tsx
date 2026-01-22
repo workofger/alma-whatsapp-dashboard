@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, isSupabaseConfigured } from '../services/supabase';
-import { Activity, Clock, MessageSquare, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { supabase, isSupabaseConfigured, getSupabaseConfig } from '../services/supabase';
+import { Activity, Clock, MessageSquare, Wifi, WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 
 interface BotStatusData {
@@ -19,27 +19,29 @@ const BotStatus: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     if (!isSupabaseConfigured()) {
-      setStatus({
-        lastMessageAt: new Date(),
-        messagesLastHour: 42,
-        messagesLastDay: 856,
-        isOnline: true,
-      });
+      setError('Supabase not configured');
       setLoading(false);
       return;
     }
 
+    setError(null);
+
     try {
       // Get the most recent message
-      const { data: lastMessage } = await supabase
+      const { data: lastMessage, error: lastMsgError } = await supabase
         .from('messages')
         .select('message_timestamp')
         .order('message_timestamp', { ascending: false })
         .limit(1)
         .single();
+
+      if (lastMsgError && lastMsgError.code !== 'PGRST116') {
+        throw lastMsgError;
+      }
 
       // Get messages count for last hour
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -70,8 +72,9 @@ const BotStatus: React.FC = () => {
         messagesLastDay: dayCount || 0,
         isOnline,
       });
-    } catch (error) {
-      console.error('Error fetching bot status:', error);
+    } catch (err: any) {
+      console.error('Error fetching bot status:', err);
+      setError(err.message || 'Connection error');
     } finally {
       setLoading(false);
       setLastUpdate(new Date());
@@ -84,6 +87,22 @@ const BotStatus: React.FC = () => {
     const interval = setInterval(fetchStatus, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Show error state if Supabase not configured
+  if (error) {
+    return (
+      <div className="bg-wa-panel border border-red-800/50 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-red-400 mb-2">
+          <AlertTriangle size={18} />
+          <span className="font-semibold text-sm">Connection Error</span>
+        </div>
+        <p className="text-xs text-gray-400 mb-2">{error}</p>
+        <p className="text-xs text-gray-500">
+          Check environment variables in Vercel
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-wa-panel border border-gray-800 rounded-lg p-4">

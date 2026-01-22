@@ -1,61 +1,68 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { mockGroups, getMockMessages, mockGhosts, mockMembers } from './mockData';
 import { GroupStats, Message, GhostUser, GroupMember } from '../types';
 
 export const fetchGroups = async (): Promise<GroupStats[]> => {
-  if (isSupabaseConfigured()) {
-    const { data, error } = await supabase.from('v_group_stats').select('*');
-    if (error) {
-      console.error('Error fetching groups:', error);
-      return mockGroups;
-    }
-    return data as GroupStats[];
+  if (!isSupabaseConfigured()) {
+    console.warn('[DataService] Supabase not configured - check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+    return [];
   }
-  return new Promise(resolve => setTimeout(() => resolve(mockGroups), 500));
+  
+  const { data, error } = await supabase.from('v_group_stats').select('*');
+  if (error) {
+    console.error('[DataService] Error fetching groups:', error);
+    return [];
+  }
+  return data as GroupStats[];
 };
 
 export const fetchMessages = async (groupId: string): Promise<Message[]> => {
-  if (isSupabaseConfigured()) {
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('message_timestamp', { ascending: true })
-      .limit(100); // Limit for performance in demo
-    if (error) {
-      console.error('Error fetching messages:', error);
-      return getMockMessages(groupId);
-    }
-    return data as Message[];
+  if (!isSupabaseConfigured()) {
+    console.warn('[DataService] Supabase not configured');
+    return [];
   }
-  return new Promise(resolve => setTimeout(() => resolve(getMockMessages(groupId)), 500));
+  
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('message_timestamp', { ascending: true });
+    
+  if (error) {
+    console.error('[DataService] Error fetching messages:', error);
+    return [];
+  }
+  return data as Message[];
 };
 
 export const fetchGhosts = async (): Promise<GhostUser[]> => {
-  if (isSupabaseConfigured()) {
-    const { data, error } = await supabase.from('v_ghost_users').select('*');
-    if (error) {
-      console.error('Error fetching ghosts:', error);
-      return mockGhosts;
-    }
-    return data as GhostUser[];
+  if (!isSupabaseConfigured()) {
+    console.warn('[DataService] Supabase not configured');
+    return [];
   }
-  return new Promise(resolve => setTimeout(() => resolve(mockGhosts), 500));
+  
+  const { data, error } = await supabase.from('v_ghost_users').select('*');
+  if (error) {
+    console.error('[DataService] Error fetching ghosts:', error);
+    return [];
+  }
+  return data as GhostUser[];
 };
 
 export const fetchMembers = async (groupId: string): Promise<GroupMember[]> => {
-    if (isSupabaseConfigured()) {
-        const { data, error } = await supabase
-            .from('group_members')
-            .select('*')
-            .eq('group_id', groupId)
-            .order('message_count', { ascending: false });
-        if(error) {
-            console.error('Error fetching members:', error);
-            return mockMembers.filter(m => m.group_id === groupId);
-        }
-        return data as GroupMember[];
-    }
-    // Return mock members filtered by group (simulate)
-    return new Promise(resolve => setTimeout(() => resolve(mockMembers), 500));
-}
+  if (!isSupabaseConfigured()) {
+    console.warn('[DataService] Supabase not configured');
+    return [];
+  }
+  
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('message_count', { ascending: false });
+    
+  if (error) {
+    console.error('[DataService] Error fetching members:', error);
+    return [];
+  }
+  return data as GroupMember[];
+};
