@@ -48,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <p>
             Alma Dashboard v1.0.0 • Built with React, Supabase & OpenAI •{' '}
             <a
-              href="https://github.com/gera-viern/alma-whatsapp-dashboard"
+              href="https://github.com/workofger/alma-whatsapp-dashboard"
               target="_blank"
               rel="noopener noreferrer"
               className="text-wa-teal hover:underline"

@@ -82,7 +82,7 @@ Alma Dashboard is a web application that provides insights and analytics for Wha
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/gera-viern/alma-whatsapp-dashboard.git
+   git clone https://github.com/workofger/alma-whatsapp-dashboard.git
    cd alma-whatsapp-dashboard
    ```
 
