@@ -1,319 +1,215 @@
-# Alma WhatsApp Dashboard
+# 📱 Alma WhatsApp Dashboard
 
-<div align="center">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react" alt="React" />
-  <img src="https://img.shields.io/badge/TypeScript-5.3-3178C6?style=flat-square&logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite" alt="Vite" />
-  <img src="https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=flat-square&logo=tailwindcss" alt="Tailwind" />
-  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&logo=supabase" alt="Supabase" />
-</div>
+A powerful, real-time analytics dashboard for monitoring WhatsApp groups through the Alma bot ecosystem. Built with React, TypeScript, and Supabase.
 
-<div align="center">
-  <h3>A powerful dashboard for monitoring WhatsApp groups captured by the Alma bot</h3>
-  <p>Real-time analytics • AI-powered summaries • Beautiful dark UI</p>
-</div>
+![Dashboard Preview](https://img.shields.io/badge/Status-Production-green) ![Version](https://img.shields.io/badge/Version-2.0.0-blue)
 
----
+## ✨ Features
 
-## Overview
+### 📊 Analytics & Insights
+- **Real-time Statistics** - Live message counts, active members, and ghost user tracking
+- **Trend Analysis** - Automated calculation of week-over-week changes
+- **Activity Charts** - Interactive message activity over 30 days
+- **Peak Hours Heatmap** - Visual representation of when groups are most active
+- **User Leaderboards** - Top contributors across all groups
+- **Message Type Distribution** - Pie charts showing media types breakdown
 
-Alma Dashboard is a web application that provides insights and analytics for WhatsApp groups monitored by the [Alma bot](https://github.com/gera-viern/whatsapp-catcher). It connects to a Supabase database where the bot stores captured messages and member data.
+### 🔍 Advanced Search
+- **Global Search** - Search across all messages in all groups
+- **Keyword Highlighting** - Visual highlighting of search terms in results
+- **Filter Options** - Filter by group, date range, sender, and message type
+- **Paginated Results** - Load more functionality for large result sets
 
-### Architecture
+### 💬 Conversation Reconstruction
+- **Full Chat View** - WhatsApp-style message rendering
+- **Infinite Scroll** - Seamless loading of historical messages
+- **Real-time Updates** - Supabase Realtime integration for live messages
+- **Quote Support** - Visual display of replied-to messages
+- **Media Placeholders** - Support for images, videos, audio, documents
+- **Forwarding Indicators** - Track message forwarding chains
 
-```
-┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
-│   WhatsApp Bot      │     │   Supabase          │     │   Alma Dashboard    │
-│   (Railway)         │────▶│   PostgreSQL        │◀────│   (Vercel)          │
-│                     │     │                     │     │                     │
-│   - Captures msgs   │     │   - messages table  │     │   - View chats      │
-│   - Syncs members   │     │   - group_members   │     │   - Analytics       │
-│   - Stores data     │     │   - SQL views       │     │   - AI summaries    │
-└─────────────────────┘     └─────────────────────┘     └─────────────────────┘
-```
+### 👤 User Profiles
+- **Individual Analytics** - Per-user message statistics
+- **Activity History** - 30-day activity chart per user
+- **Group Participation** - See which groups users are active in
+- **Word Frequency** - Most commonly used words analysis
+- **Recent Messages** - Quick view of user's recent activity
 
-## Features
+### 👻 Ghost User Detection
+- **Inactive Tracking** - Automatic detection of 30+ day inactive users
+- **LID Support** - Full support for WhatsApp's new Linked ID format
+- **Visual Indicators** - Phone vs LID identification icons
 
-### 📊 Dashboard Overview
-- Real-time message counts and activity metrics
-- Active groups and monitored users statistics
-- Ghost users (inactive members) tracking
+### 🤖 AI-Powered Summaries
+- **OpenAI Integration** - GPT-4o-mini for intelligent summaries
+- **Group Summaries** - AI-generated conversation summaries
+- **Key Topics** - Automatic topic extraction from discussions
 
-### 💬 Reconstructed Conversations
-- WhatsApp-style chat interface
-- Support for text, media, and quoted messages
-- Advanced filtering by sender, message type, and date range
-- Pagination with "load more" functionality
+### 📤 Data Export
+- **Multiple Formats** - Export to CSV or JSON
+- **Flexible Selection** - Choose date ranges and groups
+- **Complete Data** - All message fields including LID support
 
-### 📈 Analytics
-- **Activity Chart**: Messages over time (last 30 days)
-- **Peak Hours Heatmap**: Visualize when groups are most active
-- **User Leaderboard**: Top contributors ranking
-- **Message Types**: Distribution of text vs. media messages
+### 🎨 User Experience
+- **Dark Theme** - WhatsApp-inspired dark interface
+- **Mobile Responsive** - Full functionality on all devices
+- **Empty States** - Friendly messaging when no data available
+- **Loading States** - Skeleton loaders and spinners
 
-### 🤖 AI Summaries
-- Generate daily or weekly conversation summaries
-- Powered by OpenAI GPT-4
-- Identifies key topics, decisions, and action items
+## 🛠️ Tech Stack
 
-### 👻 Ghost Users Detection
-- List users inactive for 30+ days
-- Track last message date and total contributions
+- **Frontend**: React 19, TypeScript, React Router v7
+- **Styling**: Tailwind CSS 3.4 with custom WhatsApp theme
+- **Charts**: Recharts for data visualization
+- **Backend**: Supabase (PostgreSQL + Realtime)
+- **AI**: OpenAI GPT-4o-mini
+- **Build**: Vite 6
+- **Deployment**: Vercel
 
-### 📥 Data Export
-- Export messages, members, or ghost users
-- Choose CSV or JSON format
-- Filter by group and date range
-
-### 📡 Bot Status
-- Real-time online/offline status
-- Messages per hour/day metrics
-- Last message timestamp
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
-- A Supabase project with the Alma bot database schema
-- (Optional) OpenAI API key for AI summaries
+- Node.js 18+
+- npm or yarn
+- Supabase project with WhatsApp data
+- OpenAI API key (optional, for AI summaries)
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/workofger/alma-whatsapp-dashboard.git
-   cd alma-whatsapp-dashboard
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/workofger/alma-whatsapp-dashboard.git
+cd alma-whatsapp-dashboard
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install
 
-3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and add your credentials:
-   ```env
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key
-   VITE_OPENAI_API_KEY=sk-your-api-key  # Optional
-   ```
+# Configure environment
+cp .env.example .env
+# Edit .env with your credentials
 
-4. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open in browser**
-   ```
-   http://localhost:3000
-   ```
-
-## Database Schema
-
-The dashboard expects the following tables in your Supabase database:
-
-### `messages` table
-```sql
-CREATE TABLE messages (
-    id BIGSERIAL PRIMARY KEY,
-    message_id TEXT UNIQUE NOT NULL,
-    chat_id TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    message_timestamp TIMESTAMPTZ NOT NULL,
-    group_name TEXT,
-    group_id TEXT,
-    sender_id TEXT NOT NULL,
-    sender_name TEXT,
-    sender_pushname TEXT,
-    sender_number TEXT,
-    is_from_me BOOLEAN DEFAULT FALSE,
-    body TEXT,
-    message_type TEXT DEFAULT 'chat',
-    mentioned_ids TEXT[] DEFAULT '{}',
-    quoted_message_id TEXT,
-    is_forwarded BOOLEAN DEFAULT FALSE,
-    forwarding_score INTEGER DEFAULT 0,
-    has_media BOOLEAN DEFAULT FALSE,
-    media_type TEXT,
-    media_mimetype TEXT,
-    media_filename TEXT,
-    media_filesize INTEGER,
-    media_content TEXT,
-    raw_data JSONB NOT NULL
-);
+# Start development server
+npm run dev
 ```
 
-### `group_members` table
-```sql
-CREATE TABLE group_members (
-    id BIGSERIAL PRIMARY KEY,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    last_seen TIMESTAMPTZ,
-    group_id TEXT NOT NULL,
-    group_name TEXT,
-    user_id TEXT NOT NULL,
-    user_number TEXT,
-    user_name TEXT,
-    user_pushname TEXT,
-    is_admin BOOLEAN DEFAULT FALSE,
-    is_super_admin BOOLEAN DEFAULT FALSE,
-    message_count INTEGER DEFAULT 0,
-    last_message_at TIMESTAMPTZ,
-    CONSTRAINT unique_group_member UNIQUE (group_id, user_id)
-);
+### Environment Variables
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_OPENAI_API_KEY=sk-your-openai-key  # Optional
 ```
 
-### Required SQL Views
-```sql
--- Group statistics view
-CREATE VIEW v_group_stats AS
-SELECT 
-    group_id,
-    group_name,
-    COUNT(DISTINCT user_id) as member_count,
-    COUNT(DISTINCT CASE WHEN is_admin THEN user_id END) as admin_count,
-    SUM(message_count) as total_messages,
-    MAX(last_message_at) as last_activity
-FROM group_members
-GROUP BY group_id, group_name;
+## 📁 Project Structure
 
--- Ghost users view (inactive 30+ days)
-CREATE VIEW v_ghost_users AS
-SELECT 
-    group_name,
-    user_number,
-    user_pushname,
-    message_count,
-    last_message_at,
-    EXTRACT(DAY FROM NOW() - last_message_at)::INTEGER as days_inactive
-FROM group_members
-WHERE last_message_at < NOW() - INTERVAL '30 days'
-ORDER BY days_inactive DESC;
+```
+alma-dashboard/
+├── components/
+│   ├── charts/               # Analytics chart components
+│   │   ├── ActivityChartV2.tsx
+│   │   ├── HeatmapChartV2.tsx
+│   │   └── UserLeaderboardV2.tsx
+│   ├── Chat/                 # Chat-related components
+│   │   ├── MessageBubble.tsx
+│   │   └── MessageFilter.tsx
+│   ├── BotStatus.tsx
+│   ├── EmptyState.tsx
+│   ├── Layout.tsx
+│   ├── Sidebar.tsx
+│   └── StatsCard.tsx
+├── pages/
+│   ├── Dashboard.tsx         # Main overview
+│   ├── GroupList.tsx         # Group browser
+│   ├── GroupChat.tsx         # Conversation view
+│   ├── Search.tsx            # Global search
+│   ├── UserProfile.tsx       # User analytics
+│   ├── Ghosts.tsx            # Inactive users
+│   ├── Summaries.tsx         # AI summaries
+│   └── Export.tsx            # Data export
+├── services/
+│   ├── analyticsService.ts   # Analytics queries
+│   ├── dataService.ts        # Data fetching
+│   ├── supabase.ts           # Supabase client + Realtime
+│   ├── openaiService.ts      # AI integration
+│   ├── exportService.ts      # Export utilities
+│   └── userUtils.ts          # User identification
+├── styles/
+│   └── index.css             # Tailwind imports
+├── types.ts                  # TypeScript definitions
+└── App.tsx                   # Route definitions
 ```
 
-## Deployment
+## 📊 Database Schema
 
-### Deploy to Vercel
+The dashboard expects the following Supabase tables:
 
-1. **Push to GitHub**
-   ```bash
-   git remote add origin https://github.com/your-username/alma-whatsapp-dashboard.git
-   git push -u origin main
-   ```
+### messages
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| message_id | text | WhatsApp message ID |
+| group_id | text | Group identifier |
+| sender_id | text | Full sender ID |
+| sender_number | text | Phone number (nullable) |
+| sender_lid | text | Linked ID (nullable) |
+| sender_pushname | text | WhatsApp display name |
+| body | text | Message content |
+| message_type | text | chat, image, video, etc. |
+| message_timestamp | timestamp | When sent |
+| is_from_me | boolean | Sent by bot |
+| has_media | boolean | Contains media |
 
-2. **Import to Vercel**
-   - Go to [vercel.com/new](https://vercel.com/new)
-   - Import your GitHub repository
-   - Framework Preset: **Vite**
+### group_members
+| Column | Type | Description |
+|--------|------|-------------|
+| user_id | text | User identifier |
+| user_number | text | Phone number (nullable) |
+| user_lid | text | Linked ID (nullable) |
+| group_id | text | Group identifier |
+| message_count | integer | Total messages |
+| last_message_at | timestamp | Last activity |
 
-3. **Configure Environment Variables**
-   In Vercel dashboard → Project Settings → Environment Variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_OPENAI_API_KEY` (optional)
+### Views
 
-4. **Deploy**
-   Vercel will automatically build and deploy your app.
+- `v_group_stats` - Aggregated group statistics
+- `v_ghost_users` - Users inactive 30+ days
 
-### Build Commands
+## 🔒 Security
+
+- Uses Supabase Anon Key (not Service Role)
+- Row Level Security (RLS) enabled
+- No sensitive data exposed to client
+- Environment variables for all credentials
+
+## 📦 Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import in Vercel
+3. Add environment variables
+4. Deploy
+
+### Manual
 
 ```bash
-# Development
-npm run dev
-
-# Production build
 npm run build
-
-# Preview production build
-npm run preview
-
-# Type check
-npm run lint
+# Deploy dist/ folder to any static host
 ```
 
-## Project Structure
+## 📝 Changelog
 
-```
-alma-whatsapp-dashboard/
-├── index.html              # HTML entry point
-├── index.tsx               # React entry point
-├── App.tsx                 # Main app with routing
-├── types.ts                # TypeScript interfaces
-├── components/
-│   ├── Layout.tsx          # Main layout with sidebar
-│   ├── Sidebar.tsx         # Navigation sidebar
-│   ├── StatsCard.tsx       # Statistics card component
-│   ├── BotStatus.tsx       # Bot status widget
-│   └── Chat/
-│       ├── MessageBubble.tsx   # Chat message component
-│       └── MessageFilter.tsx   # Filter controls
-│   └── charts/
-│       ├── ActivityChart.tsx   # Messages over time
-│       ├── HeatmapChart.tsx    # Peak hours heatmap
-│       └── UserLeaderboard.tsx # Top contributors
-├── pages/
-│   ├── Dashboard.tsx       # Main dashboard
-│   ├── GroupList.tsx       # Groups listing
-│   ├── GroupChat.tsx       # Chat view
-│   ├── Summaries.tsx       # AI summaries
-│   ├── Ghosts.tsx          # Ghost users
-│   └── Export.tsx          # Data export
-├── services/
-│   ├── supabase.ts         # Supabase client
-│   ├── dataService.ts      # Data fetching
-│   ├── openaiService.ts    # OpenAI integration
-│   ├── exportService.ts    # Export functionality
-│   └── mockData.ts         # Demo data
-└── styles/
-    └── index.css           # Tailwind styles
-```
+See [CHANGELOG.md](./CHANGELOG.md) for version history.
 
-## Tech Stack
+## 📄 License
 
-- **Frontend**: React 18, TypeScript
-- **Build Tool**: Vite 5
-- **Styling**: Tailwind CSS 3.4
-- **Charts**: Recharts
-- **Database**: Supabase (PostgreSQL)
-- **AI**: OpenAI GPT-4
-- **Icons**: Lucide React
-- **Date Handling**: date-fns
-- **Routing**: React Router 6
+MIT License - see [LICENSE](./LICENSE)
 
-## Environment Variables
+## 👨‍💻 Author
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `VITE_SUPABASE_URL` | Yes | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase public anon key |
-| `VITE_OPENAI_API_KEY` | No | OpenAI API key for summaries |
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Credits
-
-Created by **Gerardo** - Alma's God 🛐
+**Gerardo** - *Alma's God* 🛐
 
 ---
 
-<div align="center">
-  <sub>Built with ❤️ for the Alma bot ecosystem</sub>
-</div>
+Built with ❤️ for the Alma ecosystem

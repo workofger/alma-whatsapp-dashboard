@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Message } from '../../types';
 import { format } from 'date-fns';
 import {
@@ -15,9 +16,10 @@ import { getUserDisplayName, getUserDisplayId } from '../../services/userUtils';
 interface MessageBubbleProps {
   message: Message;
   allMessages?: Message[];
+  highlightTerm?: string;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, allMessages = [] }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, allMessages = [], highlightTerm }) => {
   const isMe = message.is_from_me;
 
   // Find quoted message if exists
@@ -36,11 +38,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, allMessages = []
       >
         {/* Sender Name (for group chats, non-self messages) */}
         {!isMe && (
-          <div className="font-semibold text-xs mb-1">
+          <Link
+            to={`/user/${encodeURIComponent(getUserDisplayId(message))}`}
+            className="font-semibold text-xs mb-1 block hover:underline"
+          >
             <span style={{ color: getTagColor(message.sender_id) }}>
               {getUserDisplayName(message)}
             </span>
-          </div>
+          </Link>
         )}
 
         {/* Forwarded Indicator */}
@@ -69,7 +74,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, allMessages = []
         {/* Message Body */}
         {message.body && (
           <div className="whitespace-pre-wrap break-words leading-relaxed">
-            {formatMessageBody(message.body)}
+            {formatMessageBody(message.body, highlightTerm)}
           </div>
         )}
 
@@ -185,28 +190,88 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-// Helper: Format message body (detect URLs, mentions, etc.)
-const formatMessageBody = (body: string): React.ReactNode => {
-  // Simple URL detection
+// Helper: Format message body (detect URLs, mentions, highlights)
+const formatMessageBody = (body: string, highlightTerm?: string): React.ReactNode => {
+  // First handle URL detection
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = body.split(urlRegex);
+  // Detect @mentions (WhatsApp style)
+  const mentionRegex = /@(\d{10,})/g;
+  
+  let processedBody = body;
+  const elements: { start: number; end: number; element: React.ReactNode }[] = [];
 
-  return parts.map((part, index) => {
-    if (part.match(urlRegex)) {
-      return (
+  // Find URLs
+  let match;
+  while ((match = urlRegex.exec(body)) !== null) {
+    elements.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      element: (
         <a
-          key={index}
-          href={part}
+          key={`url-${match.index}`}
+          href={match[0]}
           target="_blank"
           rel="noopener noreferrer"
           className="text-wa-blue hover:underline break-all"
         >
-          {part}
+          {match[0]}
         </a>
+      ),
+    });
+  }
+
+  // If no special formatting needed, just highlight search term if present
+  if (elements.length === 0) {
+    return highlightSearchTerm(body, highlightTerm);
+  }
+
+  // Sort by position
+  elements.sort((a, b) => a.start - b.start);
+
+  // Build result
+  const result: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  elements.forEach((el, idx) => {
+    if (el.start > lastIndex) {
+      const text = body.slice(lastIndex, el.start);
+      result.push(
+        <React.Fragment key={`text-${idx}`}>
+          {highlightSearchTerm(text, highlightTerm)}
+        </React.Fragment>
       );
     }
-    return part;
+    result.push(el.element);
+    lastIndex = el.end;
   });
+
+  if (lastIndex < body.length) {
+    result.push(
+      <React.Fragment key="text-end">
+        {highlightSearchTerm(body.slice(lastIndex), highlightTerm)}
+      </React.Fragment>
+    );
+  }
+
+  return result;
+};
+
+// Helper: Highlight search term in text
+const highlightSearchTerm = (text: string, term?: string): React.ReactNode => {
+  if (!term?.trim()) return text;
+  
+  const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+  
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <mark key={i} className="bg-yellow-500/40 text-yellow-100 px-0.5 rounded">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
 };
 
 export default MessageBubble;

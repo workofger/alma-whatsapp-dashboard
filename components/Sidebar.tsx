@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   ChevronLeft,
+  Search,
 } from 'lucide-react';
 import BotStatus from './BotStatus';
 
@@ -32,6 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const navItems = [
     { path: '/', label: 'Overview', icon: LayoutDashboard },
     { path: '/groups', label: 'Groups', icon: MessageSquare },
+    { path: '/search', label: 'Search', icon: Search },
     { path: '/analytics', label: 'Analytics', icon: PieChart },
     { path: '/summaries', label: 'AI Summaries', icon: Bot },
     { path: '/ghosts', label: 'Ghost Users', icon: Ghost },

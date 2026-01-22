@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchMessages, fetchGroups } from '../services/dataService';
+import { subscribeToMessages, unsubscribe } from '../services/supabase';
 import { Message, GroupStats } from '../types';
 import MessageBubble from '../components/Chat/MessageBubble';
 import MessageFilter, { FilterState } from '../components/Chat/MessageFilter';
-import { Loader2, ArrowLeft, ChevronDown, Filter, X } from 'lucide-react';
-import { getUserDisplayName, getUserDisplayId } from '../services/userUtils';
+import { Loader2, ArrowLeft, ChevronUp, Filter, X, Wifi, WifiOff, Bell } from 'lucide-react';
+import { getUserDisplayName } from '../services/userUtils';
 
 const MESSAGES_PER_PAGE = 50;
 
@@ -25,20 +26,66 @@ const GroupChat: React.FC = () => {
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(MESSAGES_PER_PAGE);
+  const [isConnected, setIsConnected] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  // Load messages and subscribe to realtime updates
   useEffect(() => {
+    if (!id) return;
+
     const load = async () => {
-      if (!id) return;
       setLoading(true);
       const [msgs, groups] = await Promise.all([fetchMessages(id), fetchGroups()]);
       setAllMessages(msgs);
       setGroupInfo(groups.find((g) => g.group_id === id) || null);
       setLoading(false);
     };
+
     load();
+
+    // Subscribe to realtime messages
+    const channel = subscribeToMessages(id, (payload) => {
+      const newMessage = payload.new as Message;
+      setAllMessages((prev) => {
+        // Check if message already exists
+        if (prev.some((m) => m.message_id === newMessage.message_id)) {
+          return prev;
+        }
+        // Add to the end (newest)
+        return [...prev, newMessage];
+      });
+      setNewMessageCount((prev) => prev + 1);
+      setIsConnected(true);
+    });
+
+    setIsConnected(true);
+
+    return () => {
+      unsubscribe(channel);
+      setIsConnected(false);
+    };
   }, [id]);
+
+  // Infinite scroll with IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && visibleCount < filteredMessages.length) {
+          setVisibleCount((prev) => Math.min(prev + MESSAGES_PER_PAGE, filteredMessages.length));
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [visibleCount]);
 
   // Extract unique senders and message types for filters
   const { senders, messageTypes } = useMemo(() => {
@@ -46,7 +93,6 @@ const GroupChat: React.FC = () => {
     const typeSet = new Set<string>();
 
     allMessages.forEach((m) => {
-      // Use display name for consistent sender identification
       const sender = getUserDisplayName(m);
       senderSet.add(sender);
       typeSet.add(m.message_type);
@@ -61,7 +107,7 @@ const GroupChat: React.FC = () => {
   // Filter messages
   const filteredMessages = useMemo(() => {
     return allMessages.filter((m) => {
-      // Search filter - search in body, name, number, and LID
+      // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const matchesBody = m.body?.toLowerCase().includes(searchLower);
@@ -72,7 +118,7 @@ const GroupChat: React.FC = () => {
         if (!matchesBody && !matchesSender) return false;
       }
 
-      // Sender filter - use display name for matching
+      // Sender filter
       if (filters.sender) {
         const sender = getUserDisplayName(m);
         if (sender !== filters.sender) return false;
@@ -108,9 +154,10 @@ const GroupChat: React.FC = () => {
     }
   }, [loading]);
 
-  const loadMore = useCallback(() => {
-    setVisibleCount((prev) => Math.min(prev + MESSAGES_PER_PAGE, filteredMessages.length));
-  }, [filteredMessages.length]);
+  const scrollToBottom = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setNewMessageCount(0);
+  }, []);
 
   const clearFilters = () => {
     setFilters(initialFilters);
@@ -119,8 +166,9 @@ const GroupChat: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="h-[calc(100vh-4rem)] flex flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-wa-teal" size={48} />
+        <p className="text-gray-400">Loading conversation...</p>
       </div>
     );
   }
@@ -133,7 +181,15 @@ const GroupChat: React.FC = () => {
           <ArrowLeft size={20} />
         </Link>
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-white">{groupInfo?.group_name || 'Unknown Group'}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white">{groupInfo?.group_name || 'Unknown Group'}</h2>
+            {isConnected && (
+              <span className="flex items-center gap-1 text-xs text-green-400" title="Connected to realtime updates">
+                <Wifi size={12} />
+                <span className="hidden sm:inline">Live</span>
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-400">
             {groupInfo?.member_count} members • {filteredMessages.length} messages
             {filteredMessages.length !== allMessages.length && ` (filtered from ${allMessages.length})`}
@@ -163,34 +219,58 @@ const GroupChat: React.FC = () => {
       {/* Chat Area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-2 chat-bg"
+        className="flex-1 overflow-y-auto p-4 space-y-2 chat-bg relative"
       >
-        {/* Load More Button */}
+        {/* Load More Trigger (infinite scroll) */}
         {hasMore && (
-          <div className="flex justify-center mb-4">
-            <button
-              onClick={loadMore}
-              className="flex items-center gap-2 px-4 py-2 bg-wa-incoming hover:bg-wa-incoming/80 text-gray-300 rounded-full text-sm transition-colors"
-            >
-              <ChevronDown size={16} />
-              Load {Math.min(MESSAGES_PER_PAGE, filteredMessages.length - visibleCount)} more messages
-            </button>
+          <div ref={loadMoreRef} className="flex justify-center py-4">
+            <div className="flex items-center gap-2 text-gray-500 text-sm">
+              <Loader2 className="animate-spin" size={16} />
+              Loading more messages...
+            </div>
           </div>
         )}
 
         {visibleMessages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-gray-500">
-            {filters.search || filters.sender || filters.messageType || filters.dateStart || filters.dateEnd
-              ? 'No messages match your filters.'
-              : 'No messages found.'}
+          <div className="flex h-full flex-col items-center justify-center text-gray-500 gap-2">
+            <MessageSquareEmpty />
+            {filters.search || filters.sender || filters.messageType || filters.dateStart || filters.dateEnd ? (
+              <>
+                <p>No messages match your filters</p>
+                <button
+                  onClick={clearFilters}
+                  className="mt-2 text-sm text-wa-teal hover:underline"
+                >
+                  Clear filters
+                </button>
+              </>
+            ) : (
+              <p>No messages in this conversation yet</p>
+            )}
           </div>
         ) : (
           <>
-            {visibleMessages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} allMessages={allMessages} />
+            {visibleMessages.map((msg, idx) => (
+              <MessageBubble
+                key={`${msg.message_id}-${idx}`}
+                message={msg}
+                allMessages={allMessages}
+                highlightTerm={filters.search}
+              />
             ))}
             <div ref={bottomRef} />
           </>
+        )}
+
+        {/* New Message Indicator */}
+        {newMessageCount > 0 && (
+          <button
+            onClick={scrollToBottom}
+            className="fixed bottom-24 right-8 flex items-center gap-2 px-4 py-2 bg-wa-teal text-white rounded-full shadow-lg hover:bg-wa-teal/90 transition-all animate-bounce"
+          >
+            <Bell size={16} />
+            {newMessageCount} new message{newMessageCount > 1 ? 's' : ''}
+          </button>
         )}
       </div>
 
@@ -209,5 +289,23 @@ const GroupChat: React.FC = () => {
     </div>
   );
 };
+
+// Empty state icon
+const MessageSquareEmpty = () => (
+  <svg
+    width="64"
+    height="64"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="opacity-30"
+  >
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <line x1="9" y1="10" x2="15" y2="10" />
+  </svg>
+);
 
 export default GroupChat;

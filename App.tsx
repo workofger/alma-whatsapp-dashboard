@@ -7,6 +7,8 @@ import GroupChat from './pages/GroupChat';
 import Summaries from './pages/Summaries';
 import Ghosts from './pages/Ghosts';
 import Export from './pages/Export';
+import Search from './pages/Search';
+import UserProfile from './pages/UserProfile';
 
 const App: React.FC = () => {
   return (
@@ -20,6 +22,8 @@ const App: React.FC = () => {
           <Route path="/summaries" element={<Summaries />} />
           <Route path="/ghosts" element={<Ghosts />} />
           <Route path="/export" element={<Export />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/user/:id" element={<UserProfile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
