@@ -9,8 +9,8 @@ import {
   File,
   Sticker,
   Forward,
-  Reply,
 } from 'lucide-react';
+import { getUserDisplayName, getUserDisplayId } from '../../services/userUtils';
 
 interface MessageBubbleProps {
   message: Message;
@@ -38,7 +38,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, allMessages = []
         {!isMe && (
           <div className="font-semibold text-xs mb-1">
             <span style={{ color: getTagColor(message.sender_id) }}>
-              {message.sender_pushname || message.sender_number || 'Unknown'}
+              {getUserDisplayName(message)}
             </span>
           </div>
         )}
@@ -55,7 +55,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, allMessages = []
         {quotedMessage && (
           <div className="bg-black/20 border-l-2 border-wa-teal rounded px-2 py-1.5 mb-2 text-xs">
             <div className="font-semibold text-wa-teal text-[10px]">
-              {quotedMessage.sender_pushname || quotedMessage.sender_number}
+              {getUserDisplayName(quotedMessage)}
             </div>
             <div className="text-gray-400 truncate">
               {quotedMessage.body || (quotedMessage.has_media ? `[${quotedMessage.media_type || 'Media'}]` : '[Message]')}

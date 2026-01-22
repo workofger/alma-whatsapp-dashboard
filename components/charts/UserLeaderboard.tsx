@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Message } from '../../types';
 import { Trophy, Medal, Award, TrendingUp, MessageSquare } from 'lucide-react';
+import { getUserDisplayName, getUserDisplayId, getUserKey } from '../../services/userUtils';
 
 interface UserLeaderboardProps {
   messages: Message[];
@@ -9,20 +10,22 @@ interface UserLeaderboardProps {
 
 interface UserStats {
   name: string;
-  number: string;
+  identifier: string;
+  key: string;
   messageCount: number;
   percentage: number;
 }
 
 const UserLeaderboard: React.FC<UserLeaderboardProps> = ({ messages, limit = 10 }) => {
   const leaderboard = useMemo(() => {
-    const userCounts = new Map<string, { name: string; number: string; count: number }>();
+    const userCounts = new Map<string, { name: string; identifier: string; key: string; count: number }>();
 
     messages.forEach((m) => {
-      const key = m.sender_id;
+      const key = getUserKey(m);
       const current = userCounts.get(key) || {
-        name: m.sender_pushname || m.sender_name || 'Unknown',
-        number: m.sender_number || '',
+        name: getUserDisplayName(m),
+        identifier: getUserDisplayId(m),
+        key: key,
         count: 0,
       };
       current.count++;
@@ -35,7 +38,8 @@ const UserLeaderboard: React.FC<UserLeaderboardProps> = ({ messages, limit = 10 
       .slice(0, limit)
       .map((user) => ({
         name: user.name,
-        number: user.number,
+        identifier: user.identifier,
+        key: user.key,
         messageCount: user.count,
         percentage: totalMessages > 0 ? (user.count / totalMessages) * 100 : 0,
       }));
@@ -77,7 +81,7 @@ const UserLeaderboard: React.FC<UserLeaderboardProps> = ({ messages, limit = 10 
         <div className="space-y-3">
           {leaderboard.map((user, index) => (
             <div
-              key={user.number || index}
+              key={user.key || index}
               className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                 index < 3 ? 'bg-wa-incoming/50' : 'hover:bg-wa-incoming/30'
               }`}

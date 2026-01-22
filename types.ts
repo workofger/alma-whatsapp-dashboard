@@ -10,6 +10,7 @@ export interface Message {
   sender_name: string | null;
   sender_pushname: string | null;
   sender_number: string | null;
+  sender_lid: string | null; // WhatsApp internal Linked ID (if @lid format)
   is_from_me: boolean;
   body: string | null;
   message_type: 'chat' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'e2e_notification' | 'protocol';
@@ -36,6 +37,7 @@ export interface GroupMember {
   group_name: string | null;
   user_id: string;
   user_number: string | null;
+  user_lid: string | null; // WhatsApp internal Linked ID (if @lid format)
   user_name: string | null;
   user_pushname: string | null;
   is_admin: boolean;
@@ -51,11 +53,14 @@ export interface GroupStats {
   admin_count: number;
   total_messages: number;
   last_activity: string | null;
+  members_with_phone: number; // Count of members with real phone numbers
+  members_with_lid: number; // Count of members using LID format only
 }
 
 export interface GhostUser {
   group_name: string | null;
   user_number: string | null;
+  user_lid: string | null; // WhatsApp internal Linked ID
   user_pushname: string | null;
   message_count: number;
   last_message_at: string | null;

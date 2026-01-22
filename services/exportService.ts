@@ -7,14 +7,26 @@ interface ExportOptions {
   filename: string;
 }
 
+// Helper to escape CSV values
+const escapeCsv = (str: string | null | undefined): string => {
+  if (!str) return '';
+  // Escape quotes and wrap in quotes if contains comma, newline, or quote
+  const escaped = str.replace(/"/g, '""');
+  if (escaped.includes(',') || escaped.includes('\n') || escaped.includes('"')) {
+    return `"${escaped}"`;
+  }
+  return escaped;
+};
+
 // Convert messages to CSV format
 const messagesToCSV = (messages: Message[]): string => {
   const headers = [
     'ID',
     'Timestamp',
     'Group Name',
-    'Sender',
+    'Sender Name',
     'Sender Number',
+    'Sender LID',
     'Message Type',
     'Content',
     'Has Media',
@@ -22,22 +34,13 @@ const messagesToCSV = (messages: Message[]): string => {
   ].join(',');
 
   const rows = messages.map((m) => {
-    const escapeCsv = (str: string | null | undefined): string => {
-      if (!str) return '';
-      // Escape quotes and wrap in quotes if contains comma, newline, or quote
-      const escaped = str.replace(/"/g, '""');
-      if (escaped.includes(',') || escaped.includes('\n') || escaped.includes('"')) {
-        return `"${escaped}"`;
-      }
-      return escaped;
-    };
-
     return [
       m.id,
       new Date(m.message_timestamp).toISOString(),
       escapeCsv(m.group_name),
       escapeCsv(m.sender_pushname || m.sender_name),
-      m.sender_number,
+      escapeCsv(m.sender_number),
+      escapeCsv(m.sender_lid),
       m.message_type,
       escapeCsv(m.body),
       m.has_media,
@@ -55,6 +58,7 @@ const membersToCSV = (members: GroupMember[]): string => {
     'Group Name',
     'User Name',
     'User Number',
+    'User LID',
     'Is Admin',
     'Message Count',
     'Last Message At',
@@ -64,9 +68,10 @@ const membersToCSV = (members: GroupMember[]): string => {
   const rows = members.map((m) => {
     return [
       m.id,
-      `"${m.group_name || ''}"`,
-      `"${m.user_pushname || m.user_name || ''}"`,
-      m.user_number,
+      escapeCsv(m.group_name),
+      escapeCsv(m.user_pushname || m.user_name),
+      escapeCsv(m.user_number),
+      escapeCsv(m.user_lid),
       m.is_admin,
       m.message_count,
       m.last_message_at || '',
@@ -83,6 +88,7 @@ const ghostsToCSV = (ghosts: GhostUser[]): string => {
     'Group Name',
     'User Name',
     'User Number',
+    'User LID',
     'Message Count',
     'Last Message At',
     'Days Inactive',
@@ -90,9 +96,10 @@ const ghostsToCSV = (ghosts: GhostUser[]): string => {
 
   const rows = ghosts.map((g) => {
     return [
-      `"${g.group_name || ''}"`,
-      `"${g.user_pushname || ''}"`,
-      g.user_number,
+      escapeCsv(g.group_name),
+      escapeCsv(g.user_pushname),
+      escapeCsv(g.user_number),
+      escapeCsv(g.user_lid),
       g.message_count,
       g.last_message_at || '',
       g.days_inactive,

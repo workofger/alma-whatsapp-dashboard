@@ -5,6 +5,7 @@ import { Message, GroupStats } from '../types';
 import MessageBubble from '../components/Chat/MessageBubble';
 import MessageFilter, { FilterState } from '../components/Chat/MessageFilter';
 import { Loader2, ArrowLeft, ChevronDown, Filter, X } from 'lucide-react';
+import { getUserDisplayName, getUserDisplayId } from '../services/userUtils';
 
 const MESSAGES_PER_PAGE = 50;
 
@@ -45,7 +46,8 @@ const GroupChat: React.FC = () => {
     const typeSet = new Set<string>();
 
     allMessages.forEach((m) => {
-      const sender = m.sender_pushname || m.sender_number || 'Unknown';
+      // Use display name for consistent sender identification
+      const sender = getUserDisplayName(m);
       senderSet.add(sender);
       typeSet.add(m.message_type);
     });
@@ -59,19 +61,20 @@ const GroupChat: React.FC = () => {
   // Filter messages
   const filteredMessages = useMemo(() => {
     return allMessages.filter((m) => {
-      // Search filter
+      // Search filter - search in body, name, number, and LID
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const matchesBody = m.body?.toLowerCase().includes(searchLower);
         const matchesSender =
           m.sender_pushname?.toLowerCase().includes(searchLower) ||
-          m.sender_number?.includes(searchLower);
+          m.sender_number?.includes(searchLower) ||
+          m.sender_lid?.includes(searchLower);
         if (!matchesBody && !matchesSender) return false;
       }
 
-      // Sender filter
+      // Sender filter - use display name for matching
       if (filters.sender) {
-        const sender = m.sender_pushname || m.sender_number || 'Unknown';
+        const sender = getUserDisplayName(m);
         if (sender !== filters.sender) return false;
       }
 
