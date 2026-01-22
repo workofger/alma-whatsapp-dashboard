@@ -51,11 +51,13 @@ const Ghosts: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {isLid ? (
-                        <Hash size={12} className="text-yellow-500" title="LID (no phone available)" />
-                      ) : (
-                        <Phone size={12} className="text-green-500" title="Phone number" />
-                      )}
+                      <span title={isLid ? 'LID (no phone available)' : 'Phone number'}>
+                        {isLid ? (
+                          <Hash size={12} className="text-yellow-500" />
+                        ) : (
+                          <Phone size={12} className="text-green-500" />
+                        )}
+                      </span>
                       <span className={`text-xs font-mono ${isLid ? 'text-yellow-400' : 'text-gray-400'}`}>
                         {displayId}
                       </span>
