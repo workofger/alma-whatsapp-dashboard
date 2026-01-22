@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchGroups, fetchMessages, fetchGhosts, fetchMembers } from '../services/dataService';
+import { fetchTopUsers } from '../services/analyticsService';
 import {
   exportMessages,
   exportMembers,
@@ -7,12 +8,14 @@ import {
   generateFilename,
   ExportFormat,
 } from '../services/exportService';
+import { generatePdfReport } from '../services/pdfService';
 import { GroupStats, Message, GroupMember, GhostUser } from '../types';
 import {
   Database,
   Download,
   FileJson,
   FileSpreadsheet,
+  FileText,
   MessageSquare,
   Users,
   Ghost,
@@ -22,13 +25,13 @@ import {
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 
-type DataType = 'messages' | 'members' | 'ghosts';
+type DataType = 'messages' | 'members' | 'ghosts' | 'report';
 
 const Export: React.FC = () => {
   const [groups, setGroups] = useState<GroupStats[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
   const [dataType, setDataType] = useState<DataType>('messages');
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
+  const [exportFormat, setExportFormat] = useState<ExportFormat | 'pdf'>('csv');
   const [dateRange, setDateRange] = useState({
     start: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd'),
@@ -40,6 +43,13 @@ const Export: React.FC = () => {
     fetchGroups().then(setGroups);
   }, []);
 
+  // Auto-select PDF format for report type
+  useEffect(() => {
+    if (dataType === 'report') {
+      setExportFormat('pdf');
+    }
+  }, [dataType]);
+
   const handleExport = async () => {
     setLoading(true);
     setSuccess(false);
@@ -47,7 +57,36 @@ const Export: React.FC = () => {
     try {
       const groupName = groups.find((g) => g.group_id === selectedGroupId)?.group_name;
 
-      if (dataType === 'messages') {
+      if (dataType === 'report') {
+        // Generate PDF report
+        const [ghosts, topUsers] = await Promise.all([
+          fetchGhosts(),
+          fetchTopUsers(10),
+        ]);
+
+        const totalMessages = groups.reduce((sum, g) => sum + (g.total_messages || 0), 0);
+        const totalMembers = groups.reduce((sum, g) => sum + (g.member_count || 0), 0);
+
+        await generatePdfReport(
+          {
+            stats: {
+              totalMessages,
+              totalGroups: groups.length,
+              totalMembers,
+              ghostUsers: ghosts.length,
+            },
+            groups,
+            topUsers,
+          },
+          {
+            title: 'Alma Dashboard Report',
+            includeCharts: false,
+            includeUsers: true,
+            includeGroups: true,
+            dateRange: `${dateRange.start} to ${dateRange.end}`,
+          }
+        );
+      } else if (dataType === 'messages') {
         let messages: Message[] = [];
 
         if (selectedGroupId === 'all') {
@@ -70,7 +109,7 @@ const Export: React.FC = () => {
         });
 
         const filename = generateFilename('messages', groupName);
-        exportMessages(messages, { format: exportFormat, filename });
+        exportMessages(messages, { format: exportFormat as ExportFormat, filename });
       } else if (dataType === 'members') {
         let members: GroupMember[] = [];
 
@@ -84,11 +123,11 @@ const Export: React.FC = () => {
         }
 
         const filename = generateFilename('members', groupName);
-        exportMembers(members, { format: exportFormat, filename });
+        exportMembers(members, { format: exportFormat as ExportFormat, filename });
       } else {
         const ghosts: GhostUser[] = await fetchGhosts();
         const filename = generateFilename('ghost_users', undefined);
-        exportGhosts(ghosts, { format: exportFormat, filename });
+        exportGhosts(ghosts, { format: exportFormat as ExportFormat, filename });
       }
 
       setSuccess(true);
@@ -101,6 +140,7 @@ const Export: React.FC = () => {
   };
 
   const dataTypeOptions = [
+    { value: 'report', label: 'PDF Report', icon: FileText, description: 'Full dashboard report' },
     { value: 'messages', label: 'Messages', icon: MessageSquare, description: 'Export chat messages' },
     { value: 'members', label: 'Group Members', icon: Users, description: 'Export member data' },
     { value: 'ghosts', label: 'Ghost Users', icon: Ghost, description: 'Export inactive users' },
@@ -192,45 +232,63 @@ const Export: React.FC = () => {
         )}
 
         {/* Format Selection */}
-        <div className="card">
-          <h3 className="font-semibold text-gray-200 mb-4">Export Format</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setExportFormat('csv')}
-              className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
-                exportFormat === 'csv'
-                  ? 'border-wa-teal bg-wa-teal/10'
-                  : 'border-gray-700 hover:border-gray-600 bg-wa-incoming'
-              }`}
-            >
-              <FileSpreadsheet
-                size={24}
-                className={exportFormat === 'csv' ? 'text-wa-teal' : 'text-gray-400'}
-              />
-              <div className="text-left">
-                <div className="font-medium text-white">CSV</div>
-                <div className="text-xs text-gray-400">Spreadsheet compatible</div>
-              </div>
-            </button>
-            <button
-              onClick={() => setExportFormat('json')}
-              className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
-                exportFormat === 'json'
-                  ? 'border-wa-teal bg-wa-teal/10'
-                  : 'border-gray-700 hover:border-gray-600 bg-wa-incoming'
-              }`}
-            >
-              <FileJson
-                size={24}
-                className={exportFormat === 'json' ? 'text-wa-teal' : 'text-gray-400'}
-              />
-              <div className="text-left">
-                <div className="font-medium text-white">JSON</div>
-                <div className="text-xs text-gray-400">Developer friendly</div>
-              </div>
-            </button>
+        {dataType !== 'report' && (
+          <div className="card">
+            <h3 className="font-semibold text-gray-200 mb-4">Export Format</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setExportFormat('csv')}
+                className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                  exportFormat === 'csv'
+                    ? 'border-wa-teal bg-wa-teal/10'
+                    : 'border-gray-700 hover:border-gray-600 bg-wa-incoming'
+                }`}
+              >
+                <FileSpreadsheet
+                  size={24}
+                  className={exportFormat === 'csv' ? 'text-wa-teal' : 'text-gray-400'}
+                />
+                <div className="text-left">
+                  <div className="font-medium text-white">CSV</div>
+                  <div className="text-xs text-gray-400">Spreadsheet compatible</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setExportFormat('json')}
+                className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                  exportFormat === 'json'
+                    ? 'border-wa-teal bg-wa-teal/10'
+                    : 'border-gray-700 hover:border-gray-600 bg-wa-incoming'
+                }`}
+              >
+                <FileJson
+                  size={24}
+                  className={exportFormat === 'json' ? 'text-wa-teal' : 'text-gray-400'}
+                />
+                <div className="text-left">
+                  <div className="font-medium text-white">JSON</div>
+                  <div className="text-xs text-gray-400">Developer friendly</div>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* PDF Report Info */}
+        {dataType === 'report' && (
+          <div className="card bg-wa-teal/10 border-wa-teal">
+            <div className="flex items-start gap-3">
+              <FileText size={24} className="text-wa-teal flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-white mb-1">PDF Report</h3>
+                <p className="text-sm text-gray-300">
+                  Generates a formatted PDF report including executive summary, 
+                  top contributors, and all monitored groups with their statistics.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Export Button */}
         <button
@@ -257,7 +315,7 @@ const Export: React.FC = () => {
           ) : (
             <>
               <Download size={20} />
-              <span>Export {dataType === 'messages' ? 'Messages' : dataType === 'members' ? 'Members' : 'Ghost Users'}</span>
+              <span>Export {dataType === 'report' ? 'PDF Report' : dataType === 'messages' ? 'Messages' : dataType === 'members' ? 'Members' : 'Ghost Users'}</span>
             </>
           )}
         </button>

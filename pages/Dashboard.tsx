@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchGroups, fetchGhosts } from '../services/dataService';
 import {
@@ -17,7 +17,8 @@ import StatsCard from '../components/StatsCard';
 import ActivityChartV2 from '../components/charts/ActivityChartV2';
 import HeatmapChartV2 from '../components/charts/HeatmapChartV2';
 import UserLeaderboardV2 from '../components/charts/UserLeaderboardV2';
-import { MessageSquare, Users, Ghost, Activity, TrendingUp, Loader2, Search, ArrowRight } from 'lucide-react';
+import ExportPdfModal from '../components/ExportPdfModal';
+import { MessageSquare, Users, Ghost, Activity, TrendingUp, Loader2, Search, ArrowRight, FileDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import { getUserDisplayName } from '../services/userUtils';
 
@@ -32,6 +33,8 @@ const Dashboard: React.FC = () => {
   const [topUsers, setTopUsers] = useState<UserActivity[]>([]);
   const [messageTypes, setMessageTypes] = useState<{ type: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -100,24 +103,43 @@ const Dashboard: React.FC = () => {
     return `${prefix}${trend.percentage}%`;
   };
 
+  // Prepare report data for PDF export
+  const reportData = {
+    stats: {
+      totalMessages: stats?.totalMessages || 0,
+      totalGroups: stats?.totalGroups || groups.length,
+      totalMembers: stats?.totalMembers || 0,
+      ghostUsers: stats?.ghostUsers || ghosts.length,
+    },
+    groups,
+    topUsers,
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Dashboard Overview</h2>
           <p className="text-gray-400 text-sm mt-1">
             Real-time analytics from your WhatsApp groups
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Link
             to="/search"
             className="flex items-center gap-2 px-4 py-2 bg-wa-incoming hover:bg-wa-incoming/80 rounded-lg text-gray-300 text-sm transition-colors"
           >
             <Search size={16} />
-            Search Messages
+            Search
           </Link>
+          <button
+            onClick={() => setShowPdfModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-wa-teal hover:bg-wa-teal/90 rounded-lg text-white text-sm transition-colors"
+          >
+            <FileDown size={16} />
+            Export PDF
+          </button>
         </div>
       </div>
 
@@ -152,9 +174,11 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Activity Chart */}
-      {dailyCounts.length > 0 && (
-        <ActivityChartV2 data={dailyCounts} title="Message Activity" subtitle="Last 30 days" />
-      )}
+      <div ref={chartRef}>
+        {dailyCounts.length > 0 && (
+          <ActivityChartV2 data={dailyCounts} title="Message Activity" subtitle="Last 30 days" />
+        )}
+      </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -308,6 +332,15 @@ const Dashboard: React.FC = () => {
       <div className="text-center text-xs text-gray-600 pt-4">
         Created by Gerardo, Alma's God 🛐
       </div>
+
+      {/* PDF Export Modal */}
+      <ExportPdfModal
+        isOpen={showPdfModal}
+        onClose={() => setShowPdfModal(false)}
+        reportData={reportData}
+        chartElement={chartRef.current}
+        dateRange="Last 30 days"
+      />
     </div>
   );
 };

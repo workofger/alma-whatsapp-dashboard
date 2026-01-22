@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import Analytics from './pages/Analytics';
 import GroupList from './pages/GroupList';
 import GroupChat from './pages/GroupChat';
 import Summaries from './pages/Summaries';
@@ -18,7 +19,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/groups" element={<GroupList />} />
           <Route path="/groups/:id" element={<GroupChat />} />
-          <Route path="/analytics" element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/summaries" element={<Summaries />} />
           <Route path="/ghosts" element={<Ghosts />} />
           <Route path="/export" element={<Export />} />
