@@ -76,55 +76,101 @@ export async function fetchDashboardStats(): Promise<DashboardStats | null> {
 
   try {
     // Get current period message count
-    const { count: currentMessages } = await supabase
+    const currentMessagesResult = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .gte('message_timestamp', currentPeriodStart.toISOString())
       .lte('message_timestamp', now.toISOString());
+    
+    if (currentMessagesResult.error) {
+      console.error('Error fetching current messages:', currentMessagesResult.error);
+    }
+    const currentMessages = currentMessagesResult.count ?? 0;
 
     // Get previous period message count
-    const { count: previousMessages } = await supabase
+    const previousMessagesResult = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .gte('message_timestamp', previousPeriodStart.toISOString())
       .lte('message_timestamp', previousPeriodEnd.toISOString());
+    
+    if (previousMessagesResult.error) {
+      console.error('Error fetching previous messages:', previousMessagesResult.error);
+    }
+    const previousMessages = previousMessagesResult.count ?? 0;
 
-    // Get total messages
-    const { count: totalMessages } = await supabase
+    // Get total messages - use a more reliable method
+    const totalMessagesResult = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true });
+    
+    if (totalMessagesResult.error) {
+      console.error('Error fetching total messages:', totalMessagesResult.error);
+    }
+    let totalMessages = totalMessagesResult.count ?? 0;
+
+    // Fallback: If count is 0 but we have groups, calculate from v_group_stats
+    if (totalMessages === 0) {
+      const groupStatsResult = await supabase
+        .from('v_group_stats')
+        .select('total_messages');
+      
+      if (!groupStatsResult.error && groupStatsResult.data) {
+        totalMessages = groupStatsResult.data.reduce((sum, g) => sum + (g.total_messages || 0), 0);
+      }
+    }
 
     // Get total members
-    const { count: totalMembers } = await supabase
+    const totalMembersResult = await supabase
       .from('group_members')
       .select('*', { count: 'exact', head: true });
+    
+    if (totalMembersResult.error) {
+      console.error('Error fetching total members:', totalMembersResult.error);
+    }
+    const totalMembers = totalMembersResult.count ?? 0;
 
     // Get groups count
-    const { data: groups } = await supabase
+    const groupsResult = await supabase
       .from('v_group_stats')
       .select('group_id');
+    
+    if (groupsResult.error) {
+      console.error('Error fetching groups:', groupsResult.error);
+    }
+    const groups = groupsResult.data || [];
 
     // Get ghost users count
-    const { data: ghosts } = await supabase
+    const ghostsResult = await supabase
       .from('v_ghost_users')
       .select('*');
+    
+    if (ghostsResult.error) {
+      console.error('Error fetching ghosts:', ghostsResult.error);
+    }
+    const ghosts = ghostsResult.data || [];
 
     // Get previous ghost count (members who became inactive in previous period)
-    const { count: previousGhosts } = await supabase
+    const previousGhostsResult = await supabase
       .from('group_members')
       .select('*', { count: 'exact', head: true })
       .lt('last_message_at', previousPeriodEnd.toISOString())
       .gte('last_message_at', previousPeriodStart.toISOString());
+    
+    if (previousGhostsResult.error) {
+      console.error('Error fetching previous ghosts:', previousGhostsResult.error);
+    }
+    const previousGhosts = previousGhostsResult.count ?? 0;
 
     return {
-      totalMessages: totalMessages || 0,
-      totalMembers: totalMembers || 0,
-      totalGroups: groups?.length || 0,
-      ghostUsers: ghosts?.length || 0,
+      totalMessages,
+      totalMembers,
+      totalGroups: groups.length,
+      ghostUsers: ghosts.length,
       trends: {
-        messages: calculateTrend(currentMessages || 0, previousMessages || 0),
-        members: calculateTrend(totalMembers || 0, totalMembers || 0), // Members don't change much
-        ghosts: calculateTrend(ghosts?.length || 0, previousGhosts || 0),
+        messages: calculateTrend(currentMessages, previousMessages),
+        members: calculateTrend(totalMembers, totalMembers), // Members don't change much
+        ghosts: calculateTrend(ghosts.length, previousGhosts),
       },
     };
   } catch (error) {

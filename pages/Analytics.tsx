@@ -63,6 +63,7 @@ const Analytics: React.FC = () => {
   const [showComparison, setShowComparison] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [ghostCount, setGhostCount] = useState(0);
+  const [totalMemberCount, setTotalMemberCount] = useState(0);
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Data state
@@ -88,7 +89,12 @@ const Analytics: React.FC = () => {
 
   // Load groups and ghosts
   useEffect(() => {
-    fetchGroups().then(setGroups);
+    fetchGroups().then(data => {
+      setGroups(data);
+      // Calculate total members from group stats
+      const membersTotal = data.reduce((sum, g) => sum + (g.member_count || 0), 0);
+      setTotalMemberCount(membersTotal);
+    });
     fetchGhosts().then(ghosts => setGhostCount(ghosts.length));
   }, []);
 
@@ -521,9 +527,10 @@ const Analytics: React.FC = () => {
         onClose={() => setShowPdfModal(false)}
         reportData={{
           stats: {
-            totalMessages: stats.totalMessages,
+            // Use sum of group total_messages for accurate total, not filtered daily counts
+            totalMessages: groups.reduce((sum, g) => sum + (g.total_messages || 0), 0),
             totalGroups: groups.length,
-            totalMembers: topUsers.length,
+            totalMembers: totalMemberCount,
             ghostUsers: ghostCount,
           },
           groups,

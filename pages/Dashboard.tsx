@@ -103,10 +103,23 @@ const Dashboard: React.FC = () => {
     return `${prefix}${trend.percentage}%`;
   };
 
+  // Calculate total messages from groups if stats is unavailable or zero
+  const calculateTotalMessages = (): number => {
+    // First, try to use stats from analytics
+    if (stats?.totalMessages && stats.totalMessages > 0) {
+      return stats.totalMessages;
+    }
+    // Fallback: sum from group stats
+    if (groups.length > 0) {
+      return groups.reduce((sum, g) => sum + (g.total_messages || 0), 0);
+    }
+    return 0;
+  };
+
   // Prepare report data for PDF export
   const reportData = {
     stats: {
-      totalMessages: stats?.totalMessages || 0,
+      totalMessages: calculateTotalMessages(),
       totalGroups: stats?.totalGroups || groups.length,
       totalMembers: stats?.totalMembers || 0,
       ghostUsers: stats?.ghostUsers || ghosts.length,
@@ -147,7 +160,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Messages"
-          value={stats?.totalMessages?.toLocaleString() || '0'}
+          value={calculateTotalMessages().toLocaleString()}
           icon={MessageSquare}
           trend={stats?.trends.messages ? formatTrend(stats.trends.messages) : undefined}
           trendUp={stats?.trends.messages?.direction === 'up'}
