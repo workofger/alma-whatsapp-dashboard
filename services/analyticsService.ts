@@ -181,6 +181,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats | null> {
 
 /**
  * Fetch daily message counts for activity chart
+ * Uses pagination to get ALL messages within the date range
  */
 export async function fetchDailyMessageCounts(
   days: number = 30,
@@ -192,36 +193,67 @@ export async function fetchDailyMessageCounts(
   const startDate = subDays(endDate, days);
 
   try {
-    let query = supabase
+    // First, get the total count to know how many pages we need
+    let countQuery = supabase
       .from('messages')
-      .select('message_timestamp')
+      .select('*', { count: 'exact', head: true })
       .gte('message_timestamp', startDate.toISOString())
       .lte('message_timestamp', endDate.toISOString());
 
     if (groupId) {
-      query = query.eq('group_id', groupId);
+      countQuery = countQuery.eq('group_id', groupId);
     }
 
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    // Aggregate by day
-    const dayCounts = new Map<string, number>();
+    const { count: totalCount, error: countError } = await countQuery;
     
-    // Initialize all days with 0
+    if (countError) {
+      console.error('Error counting messages:', countError);
+      throw countError;
+    }
+
+    // Initialize day counts
+    const dayCounts = new Map<string, number>();
     for (let i = 0; i <= days; i++) {
       const day = format(subDays(endDate, days - i), 'yyyy-MM-dd');
       dayCounts.set(day, 0);
     }
 
-    // Count messages per day
-    data?.forEach((m) => {
-      const day = format(new Date(m.message_timestamp), 'yyyy-MM-dd');
-      if (dayCounts.has(day)) {
-        dayCounts.set(day, (dayCounts.get(day) || 0) + 1);
+    // If no messages, return the initialized counts
+    if (!totalCount || totalCount === 0) {
+      return Array.from(dayCounts.entries()).map(([date, count]) => ({ date, count }));
+    }
+
+    // Fetch all messages in batches of 1000
+    const pageSize = 1000;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    
+    for (let page = 0; page < totalPages; page++) {
+      let query = supabase
+        .from('messages')
+        .select('message_timestamp')
+        .gte('message_timestamp', startDate.toISOString())
+        .lte('message_timestamp', endDate.toISOString())
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (groupId) {
+        query = query.eq('group_id', groupId);
       }
-    });
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(`Error fetching messages page ${page}:`, error);
+        continue;
+      }
+
+      // Count messages per day
+      data?.forEach((m) => {
+        const day = format(new Date(m.message_timestamp), 'yyyy-MM-dd');
+        if (dayCounts.has(day)) {
+          dayCounts.set(day, (dayCounts.get(day) || 0) + 1);
+        }
+      });
+    }
 
     return Array.from(dayCounts.entries()).map(([date, count]) => ({
       date,
@@ -235,6 +267,7 @@ export async function fetchDailyMessageCounts(
 
 /**
  * Fetch hourly activity heatmap data
+ * Uses pagination to get ALL messages within the date range
  */
 export async function fetchHourlyActivity(
   days: number = 30,
@@ -246,29 +279,68 @@ export async function fetchHourlyActivity(
   const startDate = subDays(endDate, days);
 
   try {
-    let query = supabase
+    // First, get the total count
+    let countQuery = supabase
       .from('messages')
-      .select('message_timestamp')
+      .select('*', { count: 'exact', head: true })
       .gte('message_timestamp', startDate.toISOString())
       .lte('message_timestamp', endDate.toISOString());
 
     if (groupId) {
-      query = query.eq('group_id', groupId);
+      countQuery = countQuery.eq('group_id', groupId);
     }
 
-    const { data, error } = await query;
+    const { count: totalCount, error: countError } = await countQuery;
+    
+    if (countError) {
+      console.error('Error counting messages for hourly:', countError);
+      throw countError;
+    }
 
-    if (error) throw error;
-
-    // Aggregate by day of week and hour
+    // Initialize heatmap
     const heatmap: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
 
-    data?.forEach((m) => {
-      const date = new Date(m.message_timestamp);
-      const day = date.getDay();
-      const hour = date.getHours();
-      heatmap[day][hour]++;
-    });
+    // If no messages, return empty heatmap
+    if (!totalCount || totalCount === 0) {
+      const result: HourlyActivity[] = [];
+      for (let day = 0; day < 7; day++) {
+        for (let hour = 0; hour < 24; hour++) {
+          result.push({ day, hour, count: 0 });
+        }
+      }
+      return result;
+    }
+
+    // Fetch all messages in batches
+    const pageSize = 1000;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    
+    for (let page = 0; page < totalPages; page++) {
+      let query = supabase
+        .from('messages')
+        .select('message_timestamp')
+        .gte('message_timestamp', startDate.toISOString())
+        .lte('message_timestamp', endDate.toISOString())
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (groupId) {
+        query = query.eq('group_id', groupId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(`Error fetching hourly messages page ${page}:`, error);
+        continue;
+      }
+
+      data?.forEach((m) => {
+        const date = new Date(m.message_timestamp);
+        const day = date.getDay();
+        const hour = date.getHours();
+        heatmap[day][hour]++;
+      });
+    }
 
     // Flatten to array
     const result: HourlyActivity[] = [];
@@ -287,6 +359,7 @@ export async function fetchHourlyActivity(
 
 /**
  * Fetch top users by message count
+ * For "all groups", aggregates from group_members table which has pre-computed message counts
  */
 export async function fetchTopUsers(
   limit: number = 10,
@@ -311,42 +384,42 @@ export async function fetchTopUsers(
         sender_pushname: m.user_pushname,
         sender_number: m.user_number,
         sender_lid: m.user_lid,
-        message_count: m.message_count,
-        last_message_at: m.last_message_at,
+        message_count: m.message_count || 0,
+        last_message_at: m.last_message_at || '',
         first_message_at: '',
       }));
     } else {
-      // For all groups, aggregate from messages
+      // For all groups, aggregate from group_members table
+      // This gives us accurate totals from pre-computed message_count
       const { data, error } = await supabase
-        .from('messages')
-        .select('sender_id, sender_pushname, sender_number, sender_lid, message_timestamp')
-        .order('message_timestamp', { ascending: false })
-        .limit(5000); // Get recent messages for aggregation
+        .from('group_members')
+        .select('user_id, user_pushname, user_number, user_lid, message_count, last_message_at');
 
       if (error) throw error;
 
-      // Aggregate by sender
+      // Aggregate by user across all groups
       const userMap = new Map<string, UserActivity>();
       
       data?.forEach((m) => {
-        const existing = userMap.get(m.sender_id);
+        const existing = userMap.get(m.user_id);
         if (existing) {
-          existing.message_count++;
-          if (m.message_timestamp > existing.last_message_at) {
-            existing.last_message_at = m.message_timestamp;
-          }
-          if (m.message_timestamp < existing.first_message_at) {
-            existing.first_message_at = m.message_timestamp;
+          existing.message_count += (m.message_count || 0);
+          if (m.last_message_at && m.last_message_at > existing.last_message_at) {
+            existing.last_message_at = m.last_message_at;
+            // Update display name if current one is better
+            if (m.user_pushname && !existing.sender_pushname) {
+              existing.sender_pushname = m.user_pushname;
+            }
           }
         } else {
-          userMap.set(m.sender_id, {
-            sender_id: m.sender_id,
-            sender_pushname: m.sender_pushname,
-            sender_number: m.sender_number,
-            sender_lid: m.sender_lid,
-            message_count: 1,
-            last_message_at: m.message_timestamp,
-            first_message_at: m.message_timestamp,
+          userMap.set(m.user_id, {
+            sender_id: m.user_id,
+            sender_pushname: m.user_pushname,
+            sender_number: m.user_number,
+            sender_lid: m.user_lid,
+            message_count: m.message_count || 0,
+            last_message_at: m.last_message_at || '',
+            first_message_at: '',
           });
         }
       });
@@ -363,6 +436,7 @@ export async function fetchTopUsers(
 
 /**
  * Fetch message type distribution
+ * Uses pagination to get ALL messages
  */
 export async function fetchMessageTypeDistribution(
   groupId?: string
@@ -370,25 +444,53 @@ export async function fetchMessageTypeDistribution(
   if (!isSupabaseConfigured()) return [];
 
   try {
-    let query = supabase
+    // First, get the total count
+    let countQuery = supabase
       .from('messages')
-      .select('message_type');
+      .select('*', { count: 'exact', head: true });
 
     if (groupId) {
-      query = query.eq('group_id', groupId);
+      countQuery = countQuery.eq('group_id', groupId);
     }
 
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    // Aggregate by type
-    const typeCounts = new Map<string, number>();
+    const { count: totalCount, error: countError } = await countQuery;
     
-    data?.forEach((m) => {
-      const type = m.message_type || 'other';
-      typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
-    });
+    if (countError) {
+      console.error('Error counting messages for types:', countError);
+      throw countError;
+    }
+
+    if (!totalCount || totalCount === 0) {
+      return [];
+    }
+
+    // Aggregate by type using pagination
+    const typeCounts = new Map<string, number>();
+    const pageSize = 1000;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    
+    for (let page = 0; page < totalPages; page++) {
+      let query = supabase
+        .from('messages')
+        .select('message_type')
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (groupId) {
+        query = query.eq('group_id', groupId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(`Error fetching message types page ${page}:`, error);
+        continue;
+      }
+
+      data?.forEach((m) => {
+        const type = m.message_type || 'other';
+        typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
+      });
+    }
 
     return Array.from(typeCounts.entries())
       .map(([type, count]) => ({ type, count }))
